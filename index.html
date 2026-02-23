@@ -47,10 +47,13 @@
             <div class="pet-grid">
                 <div class="pet-card" onclick="showProfile('Spot')">
                     <button class="btn-dots" onclick="togglePetMenu(event, 'menu-spot')">⋮</button>
+                    
                     <div class="context-menu" id="menu-spot" style="display:none;">
+                        <div onclick="alert('Change Picture')">📷 Change Picture</div>
                         <div onclick="alert('Edit Spot')">✎ Edit Pet</div>
                         <div style="color: #EF4444;" onclick="alert('Delete Spot')">🗑 Delete Pet</div>
                     </div>
+
                     <div class="pet-avatar" style="background-color: #e0f2fe;">🐶</div>
                     <h3>Spot</h3>
                     <p class="pet-subtext">Beagle | 30 lbs</p>
@@ -58,10 +61,13 @@
                 </div>
                 <div class="pet-card" onclick="showProfile('Luna')">
                     <button class="btn-dots" onclick="togglePetMenu(event, 'menu-luna')">⋮</button>
+                    
                     <div class="context-menu" id="menu-luna" style="display:none;">
+                        <div onclick="alert('Change Picture')">📷 Change Picture</div>
                         <div onclick="alert('Edit Luna')">✎ Edit Pet</div>
                         <div style="color: #EF4444;" onclick="alert('Delete Luna')">🗑 Delete Pet</div>
                     </div>
+
                     <div class="pet-avatar" style="background-color: #fce7f3;">🐱</div>
                     <h3>Luna</h3>
                     <p class="pet-subtext">Tabby Cat | 10 lbs</p>
@@ -80,6 +86,7 @@
                 <div style="position: relative;">
                     <button class="btn-dots profile-dots" onclick="togglePetMenu(event, 'menu-profile-actions')">⋮</button>
                     <div class="context-menu" id="menu-profile-actions" style="display:none; top: 45px; right: 0;">
+                        <div onclick="alert('Change Picture for ' + currentContext)">📷 Change Picture</div>
                         <div onclick="alert('Edit ' + currentContext + ' (Prototype)')">✎ Edit Profile</div>
                         <div style="color: #EF4444;" onclick="alert('Delete ' + currentContext + ' (Prototype)')">🗑 Delete Pet</div>
                     </div>
@@ -87,7 +94,12 @@
             </div>
 
             <div class="profile-header">
-                <div class="pet-avatar large" id="profile-icon">🐶</div>
+                <div class="profile-avatar-container" onclick="alert('Simulation: Open file picker to change image')">
+                    <div class="pet-avatar large" id="profile-icon">🐶</div>
+                    <div class="avatar-hover-overlay">
+                        <span>📷 Edit</span>
+                    </div>
+                </div>
                 <div>
                     <h1 id="profile-name">Spot</h1>
                     <p id="profile-details">Beagle | 4 Years | 30 lbs</p>

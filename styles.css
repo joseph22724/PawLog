@@ -116,8 +116,19 @@ body {
 }
 .pet-card:hover { border-color: #FF9F7C; transform: translateY(-4px); box-shadow: 0 12px 24px rgba(255, 159, 124, 0.08); }
 
-.pet-avatar { font-size: 40px; width: 88px; height: 88px; margin: 0 auto 16px auto; border-radius: 50%; display: flex; align-items: center; justify-content: center;}
-.pet-avatar.large { width: 110px; height: 110px; font-size: 50px; margin: 0; }
+.pet-avatar { 
+    font-size: 40px; 
+    width: 88px; 
+    height: 88px; 
+    margin: 0 auto 16px auto; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    flex-shrink: 0; /* MAGIC FIX: Prevents the circle from squishing into an oval! */
+}
+
+.pet-avatar.large { width: 100%; height: 100%; font-size: 50px; margin: 0; }
 
 .pet-card h3 { margin: 0 0 4px 0; color: #2D2926; font-size: 20px;}
 .pet-subtext { color: #827C78; font-size: 14px; margin: 0 0 16px 0; font-weight: 500;}
@@ -132,7 +143,7 @@ body {
 /* --- 3-Dot Menus --- */
 .btn-dots { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; color: #BDB7B1; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; transition: all 0.2s;}
 .btn-dots:hover { background: #FAF8F5; color: #FF9F7C; }
-.context-menu { position: absolute; top: 45px; right: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #F0EBE6; z-index: 10; overflow: hidden; text-align: left;}
+.context-menu { position: absolute; top: 45px; right: 16px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid #F0EBE6; z-index: 10; overflow: hidden; text-align: left; min-width: 8rem;}
 .context-menu div { padding: 12px 20px; font-size: 14px; color: #2D2926; font-weight: 600; cursor: pointer; transition: background 0.2s;}
 .context-menu div:hover { background: #FAF8F5; }
 
@@ -147,6 +158,33 @@ body {
 .profile-header { display: flex; align-items: center; gap: 24px; background: white; padding: 32px; border-radius: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03);}
 .profile-header h1 { margin: 0 0 8px 0; color: #2D2926; font-size: 28px; letter-spacing: -0.5px;}
 .profile-header p { margin: 0; color: #827C78; font-weight: 500;}
+.profile-avatar-container {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0; /* Prevents the container from squishing */
+}
+
+.avatar-hover-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(45, 41, 38, 0.6); /* Semi-transparent dark overlay */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.profile-avatar-container:hover .avatar-hover-overlay {
+    opacity: 1; /* Shows the overlay when mouse hovers */
+}
 
 .doc-list { display: flex; flex-direction: column; gap: 12px; }
 .doc-item { background: white; padding: 20px 24px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,0.02); transition: transform 0.2s;}
