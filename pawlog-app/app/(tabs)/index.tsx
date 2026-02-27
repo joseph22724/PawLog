@@ -1,98 +1,164 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// 1. THIS IS OUR "MOCK DATABASE". 
+// Later, Firebase will provide this exact structure automatically.
+const mockDatabase = [
+  { id: '1', name: 'Spot', breed: 'Beagle', age: '4 Years', weight: '30 lbs', icon: '🐶' },
+  { id: '2', name: 'Luna', breed: 'Tabby', age: '2 Years', weight: '10 lbs', icon: '🐱' },
+  { id: '3', name: 'Barnaby', breed: 'Golden Retriever', age: '1 Year', weight: '65 lbs', icon: '🐕' }
+];
 
-export default function HomeScreen() {
+export default function Index() {
+  const router = useRouter();
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Good morning, Sarah</Text>
+          <Text style={styles.title}>PawPrint Dashboard</Text>
+        </View>
+        <TouchableOpacity style={styles.profileBtn} onPress={() => alert('Profile Clicked!')}>
+          <Text style={styles.profileBtnText}>S</Text>
+        </TouchableOpacity>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Body Section */}
+      <ScrollView style={styles.body}>
+        <Text style={styles.sectionTitle}>Your Pets</Text>
+        
+        {/* 2. DYNAMIC RENDERING */}
+        {/* We map through the array and automatically generate a card for every pet */}
+        {mockDatabase.map((pet) => (
+          <TouchableOpacity 
+            key={pet.id} 
+            style={styles.petCard} 
+            // We pass the pet's name to the dynamic route!
+            onPress={() => router.push(`/pet/${pet.name}`)}
+          >
+            <View style={styles.petCardLeft}>
+              <View style={styles.petAvatar}>
+                <Text style={styles.petAvatarText}>{pet.icon}</Text>
+              </View>
+              <View>
+                <Text style={styles.petName}>{pet.name}</Text>
+                <Text style={styles.petDetails}>{pet.breed} | {pet.age} | {pet.weight}</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.dotsBtn} onPress={() => alert(`${pet.name} Options`)}>
+              <Text style={styles.dotsText}>⋮</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+// 3. STYLES (Added the card styles so they look beautiful)
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#FDFBF9', 
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 10, 
+    paddingBottom: 20,
+  },
+  greeting: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2D2926', 
+  },
+  profileBtn: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#F0EBE6',
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileBtnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D2926',
+  },
+  body: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2D2926',
+    marginBottom: 15,
+  },
+  petCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F0EBE6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2, 
+  },
+  petCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  petAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#FDFBF9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    borderWidth: 1,
+    borderColor: '#F0EBE6',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  petAvatarText: {
+    fontSize: 24,
   },
+  petName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2D2926',
+  },
+  petDetails: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 4,
+  },
+  dotsBtn: {
+    padding: 10, 
+  },
+  dotsText: {
+    fontSize: 20,
+    color: '#A09C98',
+    fontWeight: 'bold',
+  }
 });
