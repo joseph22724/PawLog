@@ -1,18 +1,32 @@
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-
-// 1. THIS IS OUR "MOCK DATABASE". 
-// Later, Firebase will provide this exact structure automatically.
-const mockDatabase = [
-  { id: '1', name: 'Spot', breed: 'Beagle', age: '4 Years', weight: '30 lbs', icon: '🐶' },
-  { id: '2', name: 'Luna', breed: 'Tabby', age: '2 Years', weight: '10 lbs', icon: '🐱' },
-  { id: '3', name: 'Barnaby', breed: 'Golden Retriever', age: '1 Year', weight: '65 lbs', icon: '🐕' }
-];
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../../config/firebaseConfig';
 
 export default function Index() {
   const router = useRouter();
+  const [pets, setPets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'pets'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const petsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPets(petsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching pets: ", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,31 +47,43 @@ export default function Index() {
       <ScrollView style={styles.body}>
         <Text style={styles.sectionTitle}>Your Pets</Text>
         
-        {/* 2. DYNAMIC RENDERING */}
-        {/* We map through the array and automatically generate a card for every pet */}
-        {mockDatabase.map((pet) => (
-          <TouchableOpacity 
-            key={pet.id} 
-            style={styles.petCard} 
-            // We pass the pet's name to the dynamic route!
-            onPress={() => router.push(`/pet/${pet.name}`)}
-          >
-            <View style={styles.petCardLeft}>
-              <View style={styles.petAvatar}>
-                <Text style={styles.petAvatarText}>{pet.icon}</Text>
+        {/* DYNAMIC RENDERING FROM FIRESTORE */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF6B6B" style={{ marginTop: 20 }} />
+        ) : pets.length === 0 ? (
+          <Text style={{ textAlign: 'center', marginTop: 20, color: '#A09C98' }}>No pets found. Add one below!</Text>
+        ) : (
+          pets.map((pet) => (
+            <TouchableOpacity 
+              key={pet.id} 
+              style={styles.petCard} 
+              onPress={() => router.push(`/pet/${pet.id}`)}
+            >
+              <View style={styles.petCardLeft}>
+                <View style={styles.petAvatar}>
+                  <Text style={styles.petAvatarText}>{pet.icon || '🐾'}</Text>
+                </View>
+                <View>
+                  <Text style={styles.petName}>{pet.name}</Text>
+                  <Text style={styles.petDetails}>{pet.breed} | {pet.weight}</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.petName}>{pet.name}</Text>
-                <Text style={styles.petDetails}>{pet.breed} | {pet.age} | {pet.weight}</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.dotsBtn} onPress={() => alert(`${pet.name} Options`)}>
-              <Text style={styles.dotsText}>⋮</Text>
+              <TouchableOpacity style={styles.dotsBtn} onPress={() => alert(`${pet.name} Options`)}>
+                <Text style={styles.dotsText}>⋮</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
+          ))
+        )}
 
       </ScrollView>
+
+      {/* 4. FLOATING ACTION BUTTON */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => router.push('/add-pet' as any)}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -160,5 +186,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#A09C98',
     fontWeight: 'bold',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    width: 60,
+    height: 60,
+    backgroundColor: '#FF6B6B', // An accent color, maybe pawlog uses something specific, I'll use a nice coral red!
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF6B6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  fabText: {
+    fontSize: 32,
+    color: '#FFFFFF',
+    fontWeight: '300',
+    marginTop: -2, // slight visual alignment adjustment
   }
 });
