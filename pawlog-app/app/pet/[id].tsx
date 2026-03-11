@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
-import { doc, onSnapshot, collection, addDoc, Timestamp, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, onSnapshot, collection, addDoc, Timestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebaseConfig';
 
 export default function PetProfile() {
@@ -18,6 +18,7 @@ export default function PetProfile() {
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
+  const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
 
   const pickDocument = async () => {
     Alert.alert(
@@ -107,6 +108,32 @@ export default function PetProfile() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const deleteRecord = async (recordId: string, fileUrl?: string) => {
+    Alert.alert(
+      'Delete Document?',
+      'Are you sure you want to permanently delete this medical record? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (fileUrl) {
+                const fileRef = ref(storage, fileUrl);
+                await deleteObject(fileRef);
+              }
+              await deleteDoc(doc(db, 'pets', id as string, 'medicalRecords', recordId));
+            } catch (error: any) {
+              console.error('Error deleting record:', error);
+              Alert.alert('Delete Failed', error.message || 'An error occurred while deleting.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => {
@@ -242,12 +269,22 @@ export default function PetProfile() {
                     {record.uploadedAt ? record.uploadedAt.toDate().toLocaleDateString() : ''}
                   </Text>
                 </View>
-                {record.fileUrl && (
-                  <Image 
-                    source={{ uri: record.fileUrl }} 
-                    style={styles.thumbnailImage} 
-                  />
-                )}
+
+                <View style={styles.documentActionRow}>
+                  {record.fileUrl ? (
+                    <TouchableOpacity onPress={() => setViewingImageUrl(record.fileUrl)}>
+                      <Image 
+                        source={{ uri: record.fileUrl }} 
+                        style={styles.thumbnailImage} 
+                      />
+                    </TouchableOpacity>
+                  ) : <View />}
+
+                  <TouchableOpacity onPress={() => deleteRecord(record.id, record.fileUrl)} style={styles.deleteBtn}>
+                    <Text style={styles.deleteBtnText}>🗑️ Delete</Text>
+                  </TouchableOpacity>
+                </View>
+
               </View>
             ))
           )}
@@ -256,6 +293,22 @@ export default function PetProfile() {
         {/* Bottom spacer so you can scroll past the last card comfortably */}
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Full-screen Image Viewer Modal */}
+      <Modal visible={!!viewingImageUrl} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setViewingImageUrl(null)}>
+            <Text style={styles.modalCloseText}>Close</Text>
+          </TouchableOpacity>
+          {viewingImageUrl && (
+            <Image 
+              source={{ uri: viewingImageUrl }} 
+              style={styles.modalImage} 
+            />
+          )}
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -411,13 +464,29 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
+  documentActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
   thumbnailImage: {
     width: 100,
     height: 100,
     borderRadius: 8,
-    marginTop: 12,
     resizeMode: 'cover',
     backgroundColor: '#F0EBE6',
+  },
+  deleteBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+  },
+  deleteBtnText: {
+    color: '#C62828',
+    fontWeight: '600',
+    fontSize: 14,
   },
   scanBtn: {
     backgroundColor: '#F0EBE6',
@@ -485,5 +554,28 @@ const styles = StyleSheet.create({
   clearBtnText: {
     color: '#C62828',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+  },
+  modalCloseText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalImage: {
+    width: '100%',
+    height: '80%',
+    resizeMode: 'contain',
   }
 });
