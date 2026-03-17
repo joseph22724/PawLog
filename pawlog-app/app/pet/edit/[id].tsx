@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
-import { db, auth } from '../config/firebaseConfig';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../../../config/firebaseConfig';
 import { StatusBar } from 'expo-status-bar';
 
-export default function AddPetScreen() {
+export default function EditPetScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
@@ -18,6 +19,35 @@ export default function AddPetScreen() {
   const [medications, setMedications] = useState('');
   const [sitterNotes, setSitterNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    const fetchPet = async () => {
+      if (!id || typeof id !== 'string') return;
+      try {
+        const petDoc = await getDoc(doc(db, 'pets', id));
+        if (petDoc.exists()) {
+          const data = petDoc.data();
+          setName(data.name || '');
+          setSpecies(data.species || '');
+          setBreed(data.breed || '');
+          setWeight(data.weight || '');
+          setDiet(data.diet || '');
+          setAllergies(data.allergies || '');
+          setMedications(data.medications || '');
+          setSitterNotes(data.sitterNotes || '');
+        } else {
+          Alert.alert('Error', 'Pet not found');
+          router.back();
+        }
+      } catch (error) {
+        console.error('Error fetching pet:', error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    fetchPet();
+  }, [id]);
 
   const handleSubmit = async () => {
     if (!name.trim() || !species.trim() || !breed.trim() || !weight.trim()) {
@@ -25,12 +55,14 @@ export default function AddPetScreen() {
       return;
     }
 
+    if (!id || typeof id !== 'string') return;
+
     setIsSubmitting(true);
 
     try {
-      const now = Timestamp.now();
+      const petRef = doc(db, 'pets', id);
       
-      const petData = {
+      await updateDoc(petRef, {
         name,
         species,
         breed,
@@ -39,27 +71,27 @@ export default function AddPetScreen() {
         allergies,
         medications,
         sitterNotes,
-        icon: species.toLowerCase() === 'cat' ? '🐱' : '🐶', // Default basic logic
-        ownerId: auth.currentUser?.uid || 'unknown-user', 
-        medicalSummary: '',
-        birthDate: now,
-        createdAt: now,
-      };
-
-      console.log('Attempting to add pet to Firestore:', petData.name);
-      const docRef = await addDoc(collection(db, 'pets'), petData);
-      console.log('Successfully added with ID:', docRef.id);
+        icon: species.toLowerCase() === 'cat' ? '🐱' : '🐶',
+      });
       
-      Alert.alert('Success', 'Pet added successfully!', [
+      Alert.alert('Success', 'Pet updated successfully!', [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      console.error('Error adding pet:', error);
-      Alert.alert('Error', `Failed to add pet: ${error.message || 'Unknown error'}`);
+      console.error('Error updating pet:', error);
+      Alert.alert('Error', `Failed to update pet: ${error.message || 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingProfile) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,7 +101,7 @@ export default function AddPetScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>{'<'}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add New Pet</Text>
+        <Text style={styles.title}>Edit Pet</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -176,7 +208,7 @@ export default function AddPetScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.submitBtnText}>Submit</Text>
+            <Text style={styles.submitBtnText}>Save Changes</Text>
           )}
         </TouchableOpacity>
       </View>

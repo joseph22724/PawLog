@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Modal } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
-import { doc, onSnapshot, collection, addDoc, Timestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, addDoc, Timestamp, query, orderBy, deleteDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../config/firebaseConfig';
 
@@ -19,6 +19,10 @@ export default function PetProfile() {
   const [isUploading, setIsUploading] = useState(false);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
+
+  // Inline Editing State
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const pickDocument = async () => {
     Alert.alert(
@@ -136,6 +140,26 @@ export default function PetProfile() {
     );
   };
 
+  const handleInlineSave = async () => {
+    if (!editingField || !id || typeof id !== 'string') return;
+    
+    try {
+      const petRef = doc(db, 'pets', id);
+      await updateDoc(petRef, {
+        [editingField]: editValue.trim()
+      });
+      setEditingField(null);
+    } catch (error: any) {
+      console.error('Error updating field:', error);
+      Alert.alert('Update Failed', error.message || 'Could not save your changes.');
+    }
+  };
+
+  const startEditing = (field: string, currentValue: string) => {
+    setEditingField(field);
+    setEditValue(currentValue || '');
+  };
+
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
 
@@ -170,6 +194,46 @@ export default function PetProfile() {
     };
   }, [id]);
 
+  const handleOptions = (petId: string, petName: string) => {
+    Alert.alert(
+      `${petName} Options`,
+      'What would you like to do?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Edit Pet', 
+          onPress: () => router.push(`/pet/edit/${petId}`) 
+        },
+        {
+          text: 'Delete Pet',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              `Delete ${petName}?`,
+              'This action is permanent and will remove all associated medical records.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteDoc(doc(db, 'pets', petId));
+                      router.replace('/');
+                    } catch (error: any) {
+                      console.error('Delete error:', error);
+                      Alert.alert('Error', 'Failed to delete pet: ' + error.message);
+                    }
+                  }
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -199,8 +263,9 @@ export default function PetProfile() {
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{petData.name}&apos;s Profile</Text>
-        {/* Invisible spacer to keep the title perfectly centered */}
-        <View style={{ width: 60 }} /> 
+        <TouchableOpacity style={styles.headerOptionsBtn} onPress={() => handleOptions(petData.id, petData.name)}>
+          <Text style={styles.headerOptionsText}>⋮</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
@@ -215,10 +280,14 @@ export default function PetProfile() {
           <Text style={styles.statusBadge}>Status: Healthy</Text>
         </View>
 
-        {/* Action Button: AI Vet Assistant */}
-        <TouchableOpacity style={styles.aiBtn} onPress={() => alert('Opening AI Assistant...')}>
-          <Text style={styles.aiBtnText}>✨ Ask AI Vet Assistant</Text>
-        </TouchableOpacity>
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.shareBtn} onPress={() => router.push(`/pet/share/${petData.id}`)}>
+            <Text style={styles.shareBtnText}>🔗 Share Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.aiBtn} onPress={() => alert('Opening AI Assistant...')}>
+            <Text style={styles.aiBtnText}>✨ Ask AI Vet</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Medical Scanner UI */}
         <View style={styles.section}>
@@ -253,6 +322,88 @@ export default function PetProfile() {
               </View>
             </View>
           )}
+        </View>
+
+        {/* Care Details Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Care Details</Text>
+          <View style={styles.card}>
+            
+            {/* Diet Row */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Diet</Text>
+                {editingField === 'diet' ? (
+                  <TextInput style={styles.inlineInput} value={editValue} onChangeText={setEditValue} autoFocus />
+                ) : (
+                  <Text style={styles.detailValue}>{petData.diet || 'None added'}</Text>
+                )}
+              </View>
+              {editingField === 'diet' ? (
+                <TouchableOpacity onPress={handleInlineSave}><Text style={styles.editActionText}>Save</Text></TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => startEditing('diet', petData.diet)}><Text style={styles.editActionText}>Edit</Text></TouchableOpacity>
+              )}
+            </View>
+
+            {/* Allergies Row */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Allergies</Text>
+                {editingField === 'allergies' ? (
+                  <TextInput style={styles.inlineInput} value={editValue} onChangeText={setEditValue} autoFocus />
+                ) : (
+                  <Text style={styles.detailValue}>{petData.allergies || 'None added'}</Text>
+                )}
+              </View>
+              {editingField === 'allergies' ? (
+                <TouchableOpacity onPress={handleInlineSave}><Text style={styles.editActionText}>Save</Text></TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => startEditing('allergies', petData.allergies)}><Text style={styles.editActionText}>Edit</Text></TouchableOpacity>
+              )}
+            </View>
+
+            {/* Medications Row */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Medications</Text>
+                {editingField === 'medications' ? (
+                  <TextInput style={styles.inlineInput} value={editValue} onChangeText={setEditValue} autoFocus />
+                ) : (
+                  <Text style={styles.detailValue}>{petData.medications || 'None added'}</Text>
+                )}
+              </View>
+              {editingField === 'medications' ? (
+                <TouchableOpacity onPress={handleInlineSave}><Text style={styles.editActionText}>Save</Text></TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => startEditing('medications', petData.medications)}><Text style={styles.editActionText}>Edit</Text></TouchableOpacity>
+              )}
+            </View>
+
+            {/* Sitter Notes Row */}
+            <View style={styles.detailRow}>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Sitter Notes</Text>
+                {editingField === 'sitterNotes' ? (
+                  <TextInput 
+                    style={[styles.inlineInput, { minHeight: 60, textAlignVertical: 'top' }]} 
+                    value={editValue} 
+                    onChangeText={setEditValue} 
+                    multiline 
+                    autoFocus 
+                  />
+                ) : (
+                  <Text style={styles.detailValue}>{petData.sitterNotes || 'None added'}</Text>
+                )}
+              </View>
+              {editingField === 'sitterNotes' ? (
+                <TouchableOpacity onPress={handleInlineSave}><Text style={styles.editActionText}>Save</Text></TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => startEditing('sitterNotes', petData.sitterNotes)}><Text style={styles.editActionText}>Edit</Text></TouchableOpacity>
+              )}
+            </View>
+
+          </View>
         </View>
 
         {/* Medical Documents Section */}
@@ -342,6 +493,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2D2926',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerOptionsBtn: {
+    padding: 10,
+    marginRight: -10,
+  },
+  headerOptionsText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2D2926',
   },
   body: {
     paddingHorizontal: 20,
@@ -386,12 +548,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     overflow: 'hidden',
   },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 30,
+  },
+  shareBtn: {
+    flex: 1,
+    backgroundColor: '#F0EBE6',
+    borderWidth: 1,
+    borderColor: '#E0DBD6',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  shareBtnText: {
+    color: '#2D2926',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   aiBtn: {
+    flex: 1,
     backgroundColor: '#2D2926',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -400,8 +587,47 @@ const styles = StyleSheet.create({
   },
   aiBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDFBF9',
+    paddingBottom: 8,
+  },
+  detailContent: {
+    flex: 1,
+    marginRight: 10,
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#888',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 16,
+    color: '#2D2926',
+    lineHeight: 22,
+  },
+  inlineInput: {
+    borderWidth: 1,
+    borderColor: '#F0EBE6',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 16,
+    color: '#2D2926',
+    backgroundColor: '#FDFBF9',
+  },
+  editActionText: {
+    color: '#F79E44',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 2,
   },
   section: {
     marginBottom: 24,

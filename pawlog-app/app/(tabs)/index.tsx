@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../../config/firebaseConfig';
+import { collection, onSnapshot, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '../../config/firebaseConfig';
 
 export default function Index() {
   const router = useRouter();
@@ -12,7 +12,13 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'pets'), orderBy('createdAt', 'desc'));
+    if (!auth.currentUser) return;
+    
+    const q = query(
+      collection(db, 'pets'), 
+      where('ownerId', '==', auth.currentUser.uid),
+      orderBy('createdAt', 'desc')
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const petsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -27,6 +33,49 @@ export default function Index() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleOptions = (petId: string, petName: string) => {
+    Alert.alert(
+      `${petName} Options`,
+      'What would you like to do?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Share Pet Profile', 
+          onPress: () => router.push(`/pet/share/${petId}`) 
+        },
+        { 
+          text: 'Edit Pet', 
+          onPress: () => router.push(`/pet/edit/${petId}`) 
+        },
+        {
+          text: 'Delete Pet',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              `Delete ${petName}?`,
+              'This action is permanent and will remove all associated medical records.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await deleteDoc(doc(db, 'pets', petId));
+                    } catch (error: any) {
+                      console.error('Delete error:', error);
+                      Alert.alert('Error', 'Failed to delete pet: ' + error.message);
+                    }
+                  }
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,7 +117,7 @@ export default function Index() {
                   <Text style={styles.petDetails}>{pet.breed} | {pet.weight}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.dotsBtn} onPress={() => alert(`${pet.name} Options`)}>
+              <TouchableOpacity style={styles.dotsBtn} onPress={() => handleOptions(pet.id, pet.name)}>
                 <Text style={styles.dotsText}>⋮</Text>
               </TouchableOpacity>
             </TouchableOpacity>
