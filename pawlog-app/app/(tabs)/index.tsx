@@ -3,13 +3,31 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { collection, onSnapshot, query, orderBy, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, where, doc, deleteDoc, getDoc } from 'firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
 import { db, auth } from '../../config/firebaseConfig';
 
 export default function Index() {
   const router = useRouter();
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [firstName, setFirstName] = useState('');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (auth.currentUser) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+          if (userDoc.exists()) {
+            setFirstName(userDoc.data().firstName || '');
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -83,12 +101,19 @@ export default function Index() {
       
       {/* Header Section */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Good morning, Sarah</Text>
-          <Text style={styles.title}>PawPrint Dashboard</Text>
-        </View>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => alert('Profile Clicked!')}>
-          <Text style={styles.profileBtnText}>S</Text>
+        {/* Left: avatar + greeting — tappable to Account */}
+        <TouchableOpacity
+          style={styles.headerIdentity}
+          activeOpacity={0.7}
+          onPress={() => router.push('/(tabs)/account' as any)}
+        >
+          <View style={styles.profileBtn}>
+            <Ionicons name="person" size={22} color="#A07850" />
+          </View>
+          <View style={styles.greetingBlock}>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.title}>{firstName || 'Pet Parent'}</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -148,18 +173,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 10, 
+    paddingTop: 10,
     paddingBottom: 20,
   },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  greetingBlock: {
+    marginLeft: 12,
+  },
   greeting: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 13,
+    color: '#888',
+    marginBottom: 2,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#2D2926', 
+    color: '#2D2926',
   },
   profileBtn: {
     width: 44,
@@ -168,11 +200,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  profileBtnText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2D2926',
   },
   body: {
     paddingHorizontal: 20,

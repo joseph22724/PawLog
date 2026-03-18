@@ -50,7 +50,7 @@ export default function SharePetProfile() {
   const handlePremiumToggle = (val: boolean) => {
     if (val && !isPremium) {
       Alert.alert(
-        'PawLog Premium',
+        'VetPal Premium',
         'Upgrade to share full-resolution medical documents and vet bills directly via web link!',
         [
           { text: 'Maybe Later', style: 'cancel' },
@@ -78,7 +78,7 @@ export default function SharePetProfile() {
       });
 
       // Construct and set real Share URL
-      const generatedUrl = `https://pawlog.app/share/${docRef.id}`;
+      const generatedUrl = `https://vetpal.app/share/${docRef.id}`;
       setShareUrl(generatedUrl);
       setStep(3);
 
@@ -93,7 +93,7 @@ export default function SharePetProfile() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out my pet's profile on PawLog! ${shareUrl}`,
+        message: `Check out my pet's profile on VetPal! ${shareUrl}`,
       });
     } catch (error: any) {
       console.error('Share error:', error.message);
