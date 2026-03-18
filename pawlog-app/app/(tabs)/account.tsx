@@ -89,7 +89,7 @@ export default function AccountScreen() {
             </>
           )}
         </TouchableOpacity>
-        <Text style={styles.versionText}>PawLog Version 1.0.0</Text>
+        <Text style={styles.versionText}>VetPal Version 1.0.0</Text>
       </View>
     </SafeAreaView>
   );
