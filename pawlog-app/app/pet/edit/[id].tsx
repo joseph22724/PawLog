@@ -97,6 +97,11 @@ export default function EditPetScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>{'<'}</Text>
@@ -105,12 +110,7 @@ export default function EditPetScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-      <ScrollView style={styles.body} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
+      <ScrollView style={styles.body} contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} keyboardShouldPersistTaps="handled" onScrollBeginDrag={Keyboard.dismiss}>
         
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Name</Text>
@@ -202,21 +202,21 @@ export default function EditPetScreen() {
           />
         </View>
 
-      </ScrollView>
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]} 
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.submitBtnText}>Save Changes</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]} 
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.submitBtnText}>Save Changes</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -256,9 +256,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  scrollContent: {
-    paddingBottom: 20,
-  },
+
   inputGroup: {
     marginBottom: 20,
   },
@@ -279,10 +277,8 @@ const styles = StyleSheet.create({
     color: '#2D2926',
   },
   footer: {
-    padding: 20,
+    paddingTop: 20,
     backgroundColor: '#FDFBF9',
-    borderTopWidth: 1,
-    borderTopColor: '#F0EBE6',
   },
   submitBtn: {
     backgroundColor: '#2D2926',
