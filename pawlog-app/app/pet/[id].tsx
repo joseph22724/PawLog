@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Modal, TextInput, Dimensions, Platform } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Image, Modal, TextInput, Dimensions, Platform, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -351,6 +351,12 @@ export default function PetProfile() {
 
   return (
     <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
       
       {/* Header Section */}
@@ -639,13 +645,17 @@ export default function PetProfile() {
           activeOpacity={1}
           onPress={() => { setIsEditingDoc(false); setSelectedDoc(null); }}
         >
-          {/* Use a View with onStartShouldSetResponder to block propagation
-              without nesting TouchableOpacity (which eats child touches) */}
-          <View
-            style={styles.optionsSheet}
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
+          {/* KeyboardAvoidingView so inputs aren't hidden by keyboard in edit mode */}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'flex-end' }}
           >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View
+              style={styles.optionsSheet}
+              onStartShouldSetResponder={() => true}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
             {/* Handle */}
             <View style={styles.optionsHandle} />
 
@@ -771,9 +781,14 @@ export default function PetProfile() {
               </>
             )}
           </View>
+          </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </TouchableOpacity>
       </Modal>
 
+    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
