@@ -473,7 +473,7 @@ export default function PetProfile() {
                   <Ionicons name='cloud-upload-outline' size={14} color='#888' />
                 )}
                 <Text style={styles.testDocBtnText}>
-                  {isUploading ? 'Uploading…' : 'Upload Doc'}
+                  {isUploading ? 'Uploading…' : 'Upload Document'}
                 </Text>
               </TouchableOpacity>
               {/* Layout toggle */}
