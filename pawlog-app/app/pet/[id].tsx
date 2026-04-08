@@ -30,6 +30,38 @@ function groupByMonth(docs: any[]) {
     .map(([month, items]) => ({ month, items }));
 }
 
+const analyzeVetBill = async (base64String: string) => {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.EXPO_PUBLIC_GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: "You are a veterinary AI assistant. Analyze this document. 1. Suggest a short, clean title. 2. Extract any new diet recommendations and medications. 3. Provide a complete, verbatim raw text transcription of the entire document. 4. Provide a 1-2 sentence human-readable summary of the document's primary purpose and key findings. Return ONLY a valid JSON object with the exact keys: 'title', 'diet', 'medications', 'rawText', 'summary'. If a value is not found, leave it as an empty string." },
+            { inline_data: { mime_type: "image/jpeg", data: base64String } }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1500,
+          response_mime_type: "application/json"
+        }
+      })
+    });
+    const data = await response.json();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return null;
+    
+    // Clean markdown if present
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
+  } catch (err) {
+    console.error('Gemini API Error:', err);
+    return null;
+  }
+};
+
 export default function PetProfile() {
   // Grabs the exact document ID passed from the Dashboard
   const { id } = useLocalSearchParams(); 
@@ -39,6 +71,7 @@ export default function PetProfile() {
   const [loading, setLoading] = useState(true);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadCooldown, setUploadCooldown] = useState(false);
   const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
   const [viewingImageUrl, setViewingImageUrl] = useState<string | null>(null);
 
@@ -109,10 +142,20 @@ export default function PetProfile() {
   // ─── Upload Document (pick + upload + save) ───────────────────────────────
   const handleUploadDocument = () => {
     if (!id || typeof id !== 'string') return;
+    if (uploadCooldown) {
+      Alert.alert('Please wait', 'Please wait a moment before uploading another document.');
+      return;
+    }
 
-    const uploadFromUri = async (uri: string) => {
+    const uploadFromUri = async (uri: string, base64?: string | null) => {
       setIsUploading(true);
+      setUploadCooldown(true);
       try {
+        let extractedData: any = null;
+        if (base64) {
+          extractedData = await analyzeVetBill(base64);
+        }
+
         const response = await fetch(uri);
         const blob = await response.blob();
 
@@ -123,18 +166,29 @@ export default function PetProfile() {
         const downloadUrl = await getDownloadURL(storageRef);
 
         await addDoc(collection(db, 'pets', id, 'documents'), {
-          title: 'New Document',
+          title: extractedData?.title || 'Vet Record',
           note: '',
+          rawText: extractedData?.rawText || '',
+          summary: extractedData?.summary || '',
           date: new Date().toISOString().split('T')[0],
           thumbnailUrl: downloadUrl,
         });
 
-        Alert.alert('Success', 'Document uploaded successfully!');
+        if (extractedData?.diet || extractedData?.medications) {
+          await updateDoc(doc(db, 'pets', id), {
+            ...(extractedData.diet && { diet: extractedData.diet }),
+            ...(extractedData.medications && { medications: extractedData.medications })
+          });
+          Alert.alert('AI Success', 'VetPal analyzed the document and updated the pet\'s profile automatically!');
+        } else {
+          Alert.alert('Success', 'Document uploaded successfully!');
+        }
       } catch (err: any) {
         console.error('Upload error:', err);
         Alert.alert('Upload Failed', err.message || 'An error occurred during upload.');
       } finally {
         setIsUploading(false);
+        setTimeout(() => setUploadCooldown(false), 5000);
       }
     };
 
@@ -150,8 +204,8 @@ export default function PetProfile() {
               Alert.alert('Permission Needed', 'Camera access is required to take a photo.');
               return;
             }
-            const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
-            if (!result.canceled) uploadFromUri(result.assets[0].uri);
+            const result = await ImagePicker.launchCameraAsync({ quality: 0.8, base64: true });
+            if (!result.canceled) uploadFromUri(result.assets[0].uri, result.assets[0].base64);
           },
         },
         {
@@ -162,8 +216,8 @@ export default function PetProfile() {
               Alert.alert('Permission Needed', 'Gallery access is required to pick a photo.');
               return;
             }
-            const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
-            if (!result.canceled) uploadFromUri(result.assets[0].uri);
+            const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, base64: true });
+            if (!result.canceled) uploadFromUri(result.assets[0].uri, result.assets[0].base64);
           },
         },
         { text: 'Cancel', style: 'cancel' },
@@ -365,8 +419,8 @@ export default function PetProfile() {
           <TouchableOpacity style={styles.shareBtn} onPress={() => router.push(`/pet/share/${petData.id}`)}>
             <Text style={styles.shareBtnText}>🔗 Share Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.aiBtn} onPress={() => alert('Opening AI Assistant...')}>
-            <Text style={styles.aiBtnText}>✨ Ask AI Vet</Text>
+          <TouchableOpacity style={styles.aiBtn} onPress={() => router.push(`/pet/chat/${petData.id}`)}>
+            <Text style={styles.aiBtnText}>✨ Ask VetPal</Text>
           </TouchableOpacity>
         </View>
 
@@ -526,8 +580,9 @@ export default function PetProfile() {
                           </TouchableOpacity>
                           <View style={styles.docCardMeta}>
                             <Text style={styles.docCardTitle} numberOfLines={1}>{doc.title}</Text>
-                            <Text style={styles.docCardNote} numberOfLines={2}>{doc.note}</Text>
                             <Text style={styles.docCardDate}>{new Date(doc.date).toLocaleDateString()}</Text>
+                            {doc.summary ? <Text style={{ fontSize: 13, color: '#888', fontStyle: 'italic', marginTop: 4, lineHeight: 18 }} numberOfLines={3}>{doc.summary}</Text> : null}
+                            <Text style={styles.docCardNote} numberOfLines={2}>{doc.note}</Text>
                           </View>
                           <TouchableOpacity
                             style={styles.dotsMenuBtn}
@@ -618,6 +673,11 @@ export default function PetProfile() {
                   {selectedDoc?.title}
                 </Text>
                 <Text style={styles.optionsSubtitle}>{selectedDoc?.date}</Text>
+                {selectedDoc?.summary ? (
+                  <Text style={{ fontSize: 14, color: '#555', fontStyle: 'italic', marginTop: 8, marginBottom: 4, lineHeight: 20 }}>
+                    {selectedDoc.summary}
+                  </Text>
+                ) : null}
                 {selectedDoc?.note ? (
                   <Text style={styles.optionsNotePreview}>{selectedDoc.note}</Text>
                 ) : null}
