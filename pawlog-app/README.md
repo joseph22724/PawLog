@@ -23,7 +23,7 @@ This reduces the need to manually enter information from veterinary documents.
 ### Health Telemetry Dashboard
 
 VetPal stores health measurements over time and displays them as visual charts.
-<img width="1290" height="2796" alt="image" src="https://github.com/user-attachments/assets/10c69102-261e-4bbd-96fe-d872028c6d6b" />
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/10c69102-261e-4bbd-96fe-d872028c6d6b" />
 
 Supported telemetry can include information such as:
 
@@ -34,7 +34,7 @@ Supported telemetry can include information such as:
 Historical data is retrieved from Firestore and displayed as time-series visualizations, allowing users to see how their pet's health metrics change over time.
 
 ### Context-Aware AI Chat
-<img width="1290" height="2796" alt="image" src="https://github.com/user-attachments/assets/95e3d11e-1fac-40fa-9da3-a9b3522a6362" />
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/95e3d11e-1fac-40fa-9da3-a9b3522a6362" />
 
 VetPal includes an AI assistant that can use a pet's stored medical history as additional context when responding to questions.
 
