@@ -1,50 +1,227 @@
-# Welcome to your Expo app 👋
+# VetPal 🐾
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+VetPal is an AI-powered mobile application designed to help pet owners organize veterinary records, track health data, and interact with an AI assistant that can use their pet's medical history as context.
 
-## Get started
+Built with **React Native and Expo**, VetPal combines Firebase cloud services with the Google Gemini API to turn veterinary documents into structured health information that can be stored, visualized, and referenced later.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+### AI-Powered Document Extraction
 
-2. Start the app
+Users can upload photos of veterinary documents, such as bills or medical records.
 
-   ```bash
-   npx expo start
-   ```
+VetPal:
 
-In the output, you'll find options to open the app in a
+1. Converts the uploaded image to Base64.
+2. Sends the document to the Google Gemini API.
+3. Requests structured output using a predefined JSON schema.
+4. Extracts medical information and health telemetry.
+5. Stores the resulting data in Cloud Firestore.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+This reduces the need to manually enter information from veterinary documents.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Health Telemetry Dashboard
 
-## Get a fresh project
+VetPal stores health measurements over time and displays them as visual charts.
 
-When you're ready, run:
+Supported telemetry can include information such as:
 
-```bash
-npm run reset-project
+* Weight
+* Temperature (Coming Soon)
+
+
+Historical data is retrieved from Firestore and displayed as time-series visualizations, allowing users to see how their pet's health metrics change over time.
+
+### Context-Aware AI Chat
+
+VetPal includes an AI assistant that can use a pet's stored medical history as additional context when responding to questions.
+
+The chat system combines:
+
+* Medical history stored in Firestore
+* Previous conversation history stored locally with AsyncStorage
+* Google Gemini for AI-generated responses
+
+Chat history persists locally across app sessions so users can continue previous conversations without storing every message in the cloud.
+
+> **Note:** VetPal is an educational project and is not a replacement for professional veterinary care. AI-generated responses should not be treated as medical diagnoses.
+
+
+### Custom Pet Profiles
+
+Users can create profiles for their pets and upload profile images.
+
+Images are stored using Firebase Storage and associated with each pet's profile.
+
+---
+
+## Tech Stack
+
+### Frontend
+
+* React Native
+* Expo
+* Expo Router
+* TypeScript
+* React Context API
+* AsyncStorage
+
+### Backend / Cloud
+
+* Firebase Authentication
+* Cloud Firestore
+* Firebase Storage
+
+### AI
+
+* Google Gemini API
+* Multimodal document processing
+* Structured JSON extraction
+
+
+---
+
+## Document Processing Flow
+
+```text
+Veterinary Document
+        │
+        ▼
+Image Upload
+        │
+        ▼
+Convert Image to Base64
+        │
+        ▼
+Google Gemini API
+        │
+        ▼
+Structured JSON Response
+        │
+        ▼
+Validate / Parse Data
+        │
+        ▼
+Cloud Firestore
+        │
+        ▼
+Update Pet Health Dashboard
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## Installation
 
-To learn more about developing your project with Expo, look at the following resources:
+### Requirements
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Before running the project, install or configure:
 
-## Join the community
+* Node.js 18+
+* Expo
+* A Firebase project
+* Google Gemini API key
 
-Join our community of developers creating universal apps.
+Your Firebase project should have the following services enabled:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+* Firebase Authentication
+* Cloud Firestore
+* Firebase Storage
+
+### Clone the Repository
+
+```bash
+git clone https://github.com/joseph22724/PawLog.git
+cd PawLog
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+Create a `.env` file in the root directory.
+
+```env
+EXPO_PUBLIC_FIREBASE_API_KEY="your_firebase_api_key"
+EXPO_PUBLIC_GEMINI_API_KEY="your_gemini_api_key"
+```
+
+## Running the Application
+
+Start the Expo development server:
+
+```bash
+npx expo start
+```
+
+From there, you can run VetPal using:
+
+* Expo Go on a physical iOS or Android device
+* iOS Simulator
+* Android Emulator
+
+For a physical device, scan the QR code displayed by Expo.
+
+---
+
+## Testing
+
+VetPal was tested using several approaches.
+
+### UI / UX Testing
+
+Manual testing was performed using Expo Go on physical mobile devices to verify:
+
+* Application navigation
+* Native phone integration
+* Maps integration
+* Local AsyncStorage persistence
+
+### API Testing
+
+Gemini API requests were tested with veterinary documents to verify that document content could be processed and converted into structured application data.
+
+### Database Integration Testing
+
+Firebase integration was tested to verify:
+
+* User authentication
+* Firestore reads and writes
+* Telemetry storage
+* Document storage and retrieval
+
+
+**Version 1.0.0**
+
+Initial release: May 12, 2026
+
+---
+
+## Contributors
+
+**Joseph Garcia**
+
+
+---
+
+## Future Improvements
+
+Potential improvements to VetPal include:
+
+* Expanded support for additional veterinary document formats
+* More health metrics and visualization options
+* Improved document extraction validation
+* Enhanced AI conversation context management
+* Notifications for medications and appointments
+* Improved accessibility and responsive behavior across device sizes
+
+---
+
+## Disclaimer
+
+VetPal was developed as an educational software project.
+
+The application's AI functionality is intended to help organize information and provide general guidance. It does **not** provide professional veterinary diagnoses or replace consultation with a licensed veterinarian.
