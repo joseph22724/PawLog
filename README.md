@@ -35,10 +35,9 @@ Supported telemetry can include information such as:
 Historical data is retrieved from Firestore and displayed as time-series visualizations, allowing users to see how their pet's health metrics change over time.
 
 ### Context-Aware AI Chat
+VetPal includes an AI assistant that can use a pet's stored medical history as additional context when responding to questions.
 
 <img width="300" alt="image" src="https://github.com/user-attachments/assets/95e3d11e-1fac-40fa-9da3-a9b3522a6362" />
-
-VetPal includes an AI assistant that can use a pet's stored medical history as additional context when responding to questions.
 
 The chat system combines:
 
