@@ -1,2 +1,0 @@
-# pawlog-app
-Official Build
