@@ -1,6 +1,6 @@
-# VetPal 🐾
+# VetPal 
 
-VetPal is an AI-powered mobile application designed to help pet owners organize veterinary records, track health data, and interact with an AI assistant that can use their pet's medical history as context.
+VetPal is a AI-powered mobile application designed to help pet owners organize veterinary records, track health data, and interact with an AI assistant that can use their pet's medical history as context.
 
 Built with **React Native and Expo**, VetPal combines Firebase cloud services with the Google Gemini API to turn veterinary documents into structured health information that can be stored, visualized, and referenced later.
 
